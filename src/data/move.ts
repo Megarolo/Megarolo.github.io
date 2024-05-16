@@ -1,6 +1,6 @@
 import { Moves } from "./enums/moves";
 import { ChargeAnim, MoveChargeAnim, initMoveAnim, loadMoveAnimAssets } from "./battle-anims";
-import { BattleEndPhase, MoveEffectPhase, MovePhase, NewBattlePhase, PartyStatusCurePhase, PokemonHealPhase, StatChangePhase, SwitchSummonPhase } from "../phases";
+import { BattleEndPhase, MoveEffectPhase, MovePhase, NewBattlePhase, PartyStatusCurePhase, PokemonHealPhase, StatChangePhase, SwitchSummonPhase, ToggleDoublePositionPhase } from "../phases";
 import { BattleStat, getBattleStatName } from "./battle-stat";
 import { EncoreTag } from "./battler-tags";
 import { BattlerTagType } from "./enums/battler-tag-type";
@@ -3418,6 +3418,52 @@ export class RemoveScreensAttr extends MoveEffectAttr {
 
     return true;
 
+  }
+}
+
+export class RevivalBlessingAttr extends MoveEffectAttr {
+  constructor(user?: boolean) {
+    super(true);
+  }
+
+  apply(user: Pokemon, target: Pokemon, move: Move, args: any[]): Promise<boolean> {
+    return new Promise(resolve => {
+      if(user instanceof PlayerPokemon
+        && user.scene.getParty().findIndex(p => p.isFainted())>-1) {
+          (user as PlayerPokemon).revivalBlessing().then(() => {
+            resolve(true)
+          });
+      } else if(user instanceof EnemyPokemon
+        && user.hasTrainer()
+        && user.scene.getEnemyParty().findIndex(p => p.isFainted() && !p.isBoss()) > -1) {
+          const faintedPokemon = user.scene.getEnemyParty().filter(p => p.isFainted() && !p.isBoss());
+          const pokemon = faintedPokemon[user.randSeedInt(faintedPokemon.length)];
+          const slotIndex = user.scene.getEnemyParty().findIndex(p => pokemon.id === p.id);
+          pokemon.resetStatus();
+          pokemon.heal(Math.min(Math.max(Math.ceil(Math.floor(0.5 * pokemon.getMaxHp())), 1), pokemon.getMaxHp()));
+          user.scene.queueMessage(`${pokemon.name} was revived!`,0,true);
+
+          if(user.scene.currentBattle.double && user.scene.getEnemyParty().length > 1) {
+            const allyPokemon = user.getAlly();
+            if(slotIndex<=1) {
+              user.scene.unshiftPhase(new SwitchSummonPhase(user.scene, pokemon.getFieldIndex(), slotIndex, false, false, false));
+            } else if(allyPokemon.isFainted()){
+              user.scene.unshiftPhase(new SwitchSummonPhase(user.scene, allyPokemon.getFieldIndex(), slotIndex, false, false,false));
+            }
+          }
+          resolve(true);
+      } else {
+        user.scene.queueMessage(`But it failed!`);
+        resolve(false);
+      }
+    })
+  }
+
+  getUserBenefitScore(user: Pokemon, target: Pokemon, move: Move): integer {
+    if(user.hasTrainer() && user.scene.getEnemyParty().findIndex(p => p.isFainted() && !p.isBoss()) > -1)
+      return 20;
+
+    return -20;
   }
 }
 
@@ -6954,7 +7000,8 @@ export function initMoves() {
       .partial(),
     new StatusMove(Moves.REVIVAL_BLESSING, Type.NORMAL, -1, 1, -1, 0, 9)
       .triageMove()
-      .unimplemented(),
+      .attr(RevivalBlessingAttr)
+      .target(MoveTarget.USER),
     new AttackMove(Moves.SALT_CURE, Type.ROCK, MoveCategory.PHYSICAL, 40, 100, 15, -1, 0, 9)
       .attr(AddBattlerTagAttr, BattlerTagType.SALT_CURED)
       .makesContact(false),
