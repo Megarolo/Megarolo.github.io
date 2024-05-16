@@ -753,6 +753,7 @@ export class GameData {
     return new Promise<boolean>(resolve => {
       if (bypassLogin) {
         localStorage.removeItem(`sessionData${this.scene.sessionSlotId ? this.scene.sessionSlotId : ''}_${loggedInUser.username}`);
+        updateUserInfo(); // Remove continue on session delete
         return resolve(true);
       }
 
@@ -815,6 +816,7 @@ export class GameData {
     return new Promise<[boolean, boolean]>(resolve => {
       if (bypassLogin) {
         localStorage.removeItem(`sessionData${slotId ? slotId : ''}_${loggedInUser.username}`);
+        updateUserInfo(); // Remove continue on clear
         return resolve([true, true]);
       }
 
@@ -927,6 +929,8 @@ export class GameData {
             });
         } else {
           this.verify().then(success => {
+            // Last slot saved for continue purposes
+            localStorage.setItem('slotId', scene.sessionSlotId.toString());
             this.scene.ui.savingIcon.hide();
             resolve(success);
           });
