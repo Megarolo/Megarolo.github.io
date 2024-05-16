@@ -1,11 +1,12 @@
-import BattleScene from "../battle-scene";
-import { Setting, reloadSettings, settingDefaults, settingOptions } from "../system/settings";
-import { hasTouchscreen, isMobile } from "../touch-controls";
-import { TextStyle, addTextObject } from "./text";
-import { Mode } from "./ui";
-import UiHandler from "./ui-handler";
-import { addWindow } from "./ui-theme";
-import {Button} from "../enums/buttons";
+import BattleScene from "../../battle-scene";
+import {Setting, reloadSettings, settingDefaults, settingOptions} from "../../system/settings";
+import { hasTouchscreen, isMobile } from "../../touch-controls";
+import { TextStyle, addTextObject } from "../text";
+import { Mode } from "../ui";
+import UiHandler from "../ui-handler";
+import { addWindow } from "../ui-theme";
+import {Button} from "../../enums/buttons";
+import {InputsIcons} from "#app/ui/settings/abstract-settings-ui-handler";
 
 export default class SettingsUiHandler extends UiHandler {
   private settingsContainer: Phaser.GameObjects.Container;
@@ -19,6 +20,8 @@ export default class SettingsUiHandler extends UiHandler {
 
   private settingLabels: Phaser.GameObjects.Text[];
   private optionValueLabels: Phaser.GameObjects.Text[][];
+
+  protected navigationIcons: InputsIcons;
 
   private cursorObj: Phaser.GameObjects.NineSlice;
 
@@ -39,12 +42,34 @@ export default class SettingsUiHandler extends UiHandler {
 
     this.settingsContainer.setInteractive(new Phaser.Geom.Rectangle(0, 0, this.scene.game.canvas.width / 6, this.scene.game.canvas.height / 6), Phaser.Geom.Rectangle.Contains);
 
+    this.navigationIcons = {};
+
     const headerBg = addWindow(this.scene, 0, 0, (this.scene.game.canvas.width / 6) - 2, 24);
     headerBg.setOrigin(0, 0);
 
-    const headerText = addTextObject(this.scene, 0, 0, 'Options', TextStyle.SETTINGS_LABEL);
+    const iconPreviousTab = this.scene.add.sprite(0, 0, 'keyboard');
+    iconPreviousTab.setScale(.1);
+    iconPreviousTab.setOrigin(0, -0.1);
+    iconPreviousTab.setPositionRelative(headerBg, 8, 4);
+    this.navigationIcons['BUTTON_CYCLE_FORM'] = iconPreviousTab;
+
+    const iconNextTab = this.scene.add.sprite(0, 0, 'keyboard');
+    iconNextTab.setScale(.1);
+    iconNextTab.setOrigin(0, -0.1);
+    iconNextTab.setPositionRelative(headerBg, headerBg.width - 20, 4);
+    this.navigationIcons['BUTTON_CYCLE_SHINY'] = iconNextTab;
+
+    const headerText = addTextObject(this.scene, 0, 0, 'General', TextStyle.SETTINGS_SELECTED);
     headerText.setOrigin(0, 0);
-    headerText.setPositionRelative(headerBg, 8, 4);
+    headerText.setPositionRelative(headerBg, 8 + iconPreviousTab.width/6 - 4, 4);
+
+    const gamepadText = addTextObject(this.scene, 0, 0, 'Gamepad', TextStyle.SETTINGS_LABEL);
+    gamepadText.setOrigin(0, 0);
+    gamepadText.setPositionRelative(headerBg, 50 + iconPreviousTab.width/6 - 4, 4);
+
+    const keyboardText = addTextObject(this.scene, 0, 0, 'Keyboard', TextStyle.SETTINGS_LABEL);
+    keyboardText.setOrigin(0, 0);
+    keyboardText.setPositionRelative(headerBg, 97 + iconPreviousTab.width/6 - 4, 4);
 
     this.optionsBg = addWindow(this.scene, 0, headerBg.height, (this.scene.game.canvas.width / 6) - 2, (this.scene.game.canvas.height / 6) - headerBg.height - 2);
     this.optionsBg.setOrigin(0, 0);
@@ -92,8 +117,12 @@ export default class SettingsUiHandler extends UiHandler {
 
     this.settingsContainer.add(headerBg);
     this.settingsContainer.add(headerText);
+    this.settingsContainer.add(gamepadText);
+    this.settingsContainer.add(keyboardText);
     this.settingsContainer.add(this.optionsBg);
     this.settingsContainer.add(this.optionsContainer);
+    this.settingsContainer.add(iconNextTab)
+    this.settingsContainer.add(iconPreviousTab)
 
     ui.add(this.settingsContainer);
 
@@ -103,9 +132,23 @@ export default class SettingsUiHandler extends UiHandler {
     this.settingsContainer.setVisible(false);
   }
 
+  updateBindings(): void {
+    for (const settingName of Object.keys(this.navigationIcons)) {
+      const icon = this.scene.inputController?.getIconForLatestInputRecorded(settingName);
+      if (icon) {
+        const type = this.scene.inputController?.getLastSourceType();
+        this.navigationIcons[settingName].setTexture(type);
+        this.navigationIcons[settingName].setFrame(icon);
+        this.navigationIcons[settingName].alpha = 1;
+      } else
+        this.navigationIcons[settingName].alpha = 0;
+    }
+  }
+
   show(args: any[]): boolean {
     super.show(args);
-    
+    this.updateBindings();
+
     const settings: object = localStorage.hasOwnProperty('settings') ? JSON.parse(localStorage.getItem('settings')) : {};
 
     Object.keys(settingDefaults).forEach((setting, s) => this.setOptionCursor(s, settings.hasOwnProperty(setting) ? settings[setting] : settingDefaults[setting]));
@@ -181,6 +224,14 @@ export default class SettingsUiHandler extends UiHandler {
           // Moves the option cursor right, if possible.
           if (this.optionCursors[cursor] < this.optionValueLabels[cursor].length - 1)
             success = this.setOptionCursor(cursor, this.optionCursors[cursor] + 1, true);
+          break;
+        case Button.CYCLE_FORM: // to the left
+          this.scene.ui.setMode(Mode.SETTINGS_KEYBOARD)
+            success = true;
+          break;
+        case Button.CYCLE_SHINY: // to the right
+          this.scene.ui.setMode(Mode.SETTINGS_GAMEPAD)
+          success = true;
           break;
       }
     }
