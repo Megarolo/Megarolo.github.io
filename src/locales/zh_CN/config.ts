@@ -36,7 +36,6 @@ export const zhCnConfig = {
     trainerClasses: trainerClasses,
     trainerNames: trainerNames,
     tutorial: tutorial,
-    nature: nature,
     growth: growth,
     weather: weather,
     modifierType: modifierType,
