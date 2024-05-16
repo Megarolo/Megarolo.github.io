@@ -1644,7 +1644,7 @@ export class TurnInitPhase extends FieldPhase {
           this.scene.currentBattle.addParticipant(pokemon as PlayerPokemon);
 
         pokemon.resetTurnData();
-
+        applyPostBattleInitAbAttrs(PostBattleInitAbAttr, pokemon);
         this.scene.pushPhase(pokemon.isPlayer() ? new CommandPhase(this.scene, i) : new EnemyCommandPhase(this.scene, i - BattlerIndex.ENEMY));
       }
     });
