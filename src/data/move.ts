@@ -247,6 +247,18 @@ export default class Move implements Localizable {
     return this;
   }
 
+  ignoresHiddenTag(user: Pokemon) {
+    switch (this.id) {
+      case Moves.TOXIC:
+        if(user.isOfType(Type.POISON)){
+          return true;
+        }
+    
+      default:
+        return false;
+    }
+  }
+
   soundBased(soundBased?: boolean): this {
     this.setFlag(MoveFlags.SOUND_BASED, soundBased);
     return this;

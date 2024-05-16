@@ -2605,7 +2605,7 @@ export class MoveEffectPhase extends PokemonPhase {
       return true;
     
     const hiddenTag = target.getTag(HiddenTag);
-    if (hiddenTag && !this.move.getMove().getAttrs(HitsTagAttr).filter(hta => (hta as HitsTagAttr).tagType === hiddenTag.tagType).length)
+    if (hiddenTag && !this.move.getMove().getAttrs(HitsTagAttr).filter(hta => (hta as HitsTagAttr).tagType === hiddenTag.tagType).length && !this.move.getMove().ignoresHiddenTag(this.getUserPokemon()))
       return false;
 
     const moveAccuracy = new Utils.NumberHolder(this.move.getMove().accuracy);
