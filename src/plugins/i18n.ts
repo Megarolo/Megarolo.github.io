@@ -8,6 +8,7 @@ import { frConfig } from '#app/locales/fr/config.js';
 import { itConfig } from '#app/locales/it/config.js';
 import { ptBrConfig } from '#app/locales/pt_BR/config.js';
 import { zhCnConfig } from '#app/locales/zh_CN/config.js';
+import { koConfig } from '#app/locales/ko/config.js';
 
 export interface SimpleTranslationEntries {
   [key: string]: string
@@ -51,11 +52,35 @@ export interface Localizable {
   localize(): void;
 }
 
+const alternativeFonts = {
+  'ko': [
+    new FontFace("emerald", "url(./fonts/pokemon-dppt.ttf)")
+  ],
+}
+
+function loadFont(language: string) {
+  Object.keys(alternativeFonts).forEach(l => {
+    if (language == l) {
+      alternativeFonts[l].forEach(f=> { document.fonts.add(f); });
+    }
+    else {
+      alternativeFonts[l].forEach(f=> {
+        if (f && f.status == "loaded") { document.fonts.delete(f); }
+      });
+    }
+  });
+}
+
 export function initI18n(): void {
   let lang = '';
 
   if (localStorage.getItem('prLang'))
     lang = localStorage.getItem('prLang');
+
+  loadFont(lang);
+  i18next.on("languageChanged", lng=> {
+    loadFont(lng);
+  });
 
   /**
    * i18next is a localization library for maintaining and using translation resources.
@@ -76,7 +101,7 @@ export function initI18n(): void {
   i18next.use(LanguageDetector).init({
     lng: lang,
     fallbackLng: 'en',
-    supportedLngs: ['en', 'es', 'fr', 'it', 'de', 'zh_CN','pt_BR'],
+    supportedLngs: ['en', 'es', 'fr', 'it', 'de', 'pt_BR', 'zh_CN', 'ko'],
     debug: true,
     interpolation: {
       escapeValue: false,
@@ -102,6 +127,9 @@ export function initI18n(): void {
       },
       zh_CN: {
         ...zhCnConfig
+      },
+      ko: {
+        ...koConfig
       }
     },
   });
