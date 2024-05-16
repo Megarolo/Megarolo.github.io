@@ -7,7 +7,7 @@ import { StatusEffect } from "./status-effect";
 import * as Utils from "../utils";
 import { Moves } from "./enums/moves";
 import { ChargeAttr, MoveFlags, allMoves } from "./move";
-import { Type } from "./type";
+import { getTypeDamageMultiplier, Type } from "./type";
 import { BlockNonDirectDamageAbAttr, FlinchEffectAbAttr, ReverseDrainAbAttr, applyAbAttrs } from "./ability";
 import { Abilities } from "./enums/abilities";
 import { BattlerTagType } from "./enums/battler-tag-type";
@@ -1127,6 +1127,33 @@ export class MagnetRisenTag extends TypeImmuneTag {
   }
 }
 
+export class IgnoreTypeImmunityTag extends BattlerTag {
+  public immuneType: Type;
+
+  constructor(tagType: BattlerTagType, sourceMove: Moves, type: Type) {
+    super(tagType, BattlerTagLapseType.TURN_END, 1, sourceMove);
+    this.immuneType = type;
+  }
+
+  /**
+  * When given a battler tag or json representing one, load the data for it.
+  * @param {BattlerTag | any} source A battler tag
+  */
+  loadTag(source: BattlerTag | any): void {
+    super.loadTag(source);
+    this.immuneType = source.type as Type;
+  }
+
+  lapse(pokemon: Pokemon, lapseType: BattlerTagLapseType): boolean {
+    return lapseType !== BattlerTagLapseType.CUSTOM || super.lapse(pokemon, lapseType);
+  }
+
+  ignoreImmunity(types: Type[], moveType: Type): boolean {
+    return types.includes(this.immuneType)
+              && getTypeDamageMultiplier(moveType, this.immuneType) == 0;
+  }
+}
+
 export class TypeBoostTag extends BattlerTag {
   public boostedType: Type;
   public boostValue: number;
@@ -1387,6 +1414,10 @@ export function getBattlerTag(tagType: BattlerTagType, turnCount: integer, sourc
       return new MagnetRisenTag(tagType, sourceMove);
     case BattlerTagType.MINIMIZED:
       return new MinimizeTag();
+    case BattlerTagType.IGNORE_GHOST:
+      return new IgnoreTypeImmunityTag(tagType, sourceMove, Type.GHOST);
+    case BattlerTagType.IGNORE_DARK:
+      return new IgnoreTypeImmunityTag(tagType, sourceMove, Type.DARK);
     case BattlerTagType.NONE:
     default:
         return new BattlerTag(tagType, BattlerTagLapseType.CUSTOM, turnCount, sourceMove, sourceId);
