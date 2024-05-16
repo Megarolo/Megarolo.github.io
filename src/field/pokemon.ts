@@ -1733,7 +1733,10 @@ export default abstract class Pokemon extends Phaser.GameObjects.Container {
     const newTag = getBattlerTag(tagType, turnCount, sourceMove, sourceId);
 
     const cancelled = new Utils.BooleanHolder(false);
-    applyPreApplyBattlerTagAbAttrs(PreApplyBattlerTagAbAttr, this, newTag, cancelled);
+    const allyCheck = true;
+    applyPreApplyBattlerTagAbAttrs(PreApplyBattlerTagAbAttr, this, newTag, cancelled, !allyCheck);
+    if (!cancelled.value) // If the tag was not cancelled, check if Ally has an ability that provides immunity to allies
+      applyPreApplyBattlerTagAbAttrs(PreApplyBattlerTagAbAttr, this.getAlly(), newTag, cancelled, allyCheck);
 
     if (!cancelled.value && newTag.canAdd(this)) {
       this.summonData.tags.push(newTag);
@@ -2093,7 +2096,11 @@ export default abstract class Pokemon extends Phaser.GameObjects.Container {
     }
 
     const cancelled = new Utils.BooleanHolder(false);
-    applyPreSetStatusAbAttrs(StatusEffectImmunityAbAttr, this, effect, cancelled, quiet);
+    const allyCheck = true;
+    applyPreSetStatusAbAttrs(StatusEffectImmunityAbAttr, this, effect, cancelled, quiet, !allyCheck);
+    if (!cancelled.value) {// If Pokemon fails to protect themselves, check if ally has an ability to protect them
+      applyPreSetStatusAbAttrs(StatusEffectImmunityAbAttr, this.getAlly(), effect, cancelled, quiet, allyCheck);
+    }
 
     if (cancelled.value)
       return false;
