@@ -1727,19 +1727,32 @@ export class CommandPhase extends FieldPhase {
           success = true;
         }
         else if (cursor < playerPokemon.getMoveset().length) {
+          
           const move = playerPokemon.getMoveset()[cursor];
           this.scene.ui.setMode(Mode.MESSAGE);
 
-          // Decides between a Disabled, Not Implemented, or No PP translation message
+          console.log(`${move.getName()} did not work`)
+          // Decides between a Disabled, Choice Locked, Not Implemented, or No PP translation message
           const errorMessage = 
             playerPokemon.summonData.disabledMove === move.moveId ? 'battle:moveDisabled' : 
+            playerPokemon.summonData.choicedMove !== Moves.NONE ? 'battle:moveChoiced' : 
             move.getName().endsWith(' (N)') ? 'battle:moveNotImplemented' : 'battle:moveNoPP';
           const moveName = move.getName().replace(' (N)', ''); // Trims off the indicator
-
-          this.scene.ui.showText(i18next.t(errorMessage, { moveName: moveName }), null, () => {
-            this.scene.ui.clearText();
-            this.scene.ui.setMode(Mode.FIGHT, this.fieldIndex);
-          }, null, true);
+          
+          if (playerPokemon.summonData.choicedMove === Moves.NONE){
+            console.log("error message for everything else");
+            this.scene.ui.showText(i18next.t(errorMessage, { moveName: moveName }), null, () => {
+              this.scene.ui.clearText();
+              this.scene.ui.setMode(Mode.FIGHT, this.fieldIndex);
+            }, null, true);
+          }
+          else {
+            console.log("error message for choice lock move");
+            this.scene.ui.showText(i18next.t(errorMessage, { pokemonName: playerPokemon.name, moveName: allMoves[playerPokemon.summonData.choicedMove].name }), null, () => {
+              this.scene.ui.clearText();
+              this.scene.ui.setMode(Mode.FIGHT, this.fieldIndex);
+            }, null, true);
+          }
         }
         break;
       case Command.BALL:
@@ -2231,9 +2244,11 @@ export class MovePhase extends BattlePhase {
 
     console.log(Moves[this.move.moveId]);
 
-    if (!this.canMove()) {
+    if (!this.canMove() && (this.move.moveId !== Moves.STRUGGLE)) { // patch for choice item - disable interaction
       if (this.move.moveId && this.pokemon.summonData.disabledMove === this.move.moveId)
         this.scene.queueMessage(`${this.move.getName()} is disabled!`);
+      if (this.move.moveId && this.pokemon.summonData.choicedMove !== Moves.NONE && this.pokemon.summonData.choicedMove !== this.move.moveId)
+        this.scene.queueMessage(getPokemonMessage(this.pokemon ,` is locked into ${allMoves[this.pokemon.summonData.choicedMove].name}!`)); 
       return this.end();
     }
 

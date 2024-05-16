@@ -1216,6 +1216,24 @@ export class PostAttackApplyBattlerTagAbAttr extends PostAttackAbAttr {
   }
 }
 
+export class PostAttackLockMoveAbAttr extends PostAttackAbAttr {
+  private condition: PokemonAttackCondition;
+  constructor(condition: PokemonAttackCondition) {
+    super();
+    this.condition = condition;
+  }
+  applyPostAttack(pokemon: Pokemon, passive: boolean, attacker: Pokemon, move: PokemonMove, hitResult: HitResult, args: any[]): boolean {
+    if (!this.condition(pokemon, attacker, move.getMove())) return false;
+    console.log(`locked in the move: ${allMoves[pokemon.summonData.choicedMove].name}!`)
+
+    if (!(move.moveId === Moves.MIMIC || move.moveId === Moves.TRANSFORM)){
+      pokemon.summonData.choicedMove = move.moveId;
+      pokemon.scene.queueMessage(getPokemonMessage(pokemon ,` is locked into ${allMoves[pokemon.summonData.choicedMove].name}!`));
+    }
+    return true;
+  }  
+}
+
 export class PostDefendStealHeldItemAbAttr extends PostDefendAbAttr {
   private condition: PokemonDefendCondition;
 
@@ -3649,7 +3667,10 @@ export function initAbilities() {
       .bypassFaint()
       .partial(),
     new Ability(Abilities.GORILLA_TACTICS, 8)
-      .unimplemented(),
+      .attr(MovePowerBoostAbAttr, (user, target, move) => move.category === MoveCategory.PHYSICAL, 1.5)
+      .attr(PostAttackLockMoveAbAttr, (user, target, move) => user.summonData.choicedMove === Moves.NONE)
+      .ignorable()
+      .partial(),
     new Ability(Abilities.NEUTRALIZING_GAS, 8)
       .attr(SuppressFieldAbilitiesAbAttr)
       .attr(UncopiableAbilityAbAttr)
