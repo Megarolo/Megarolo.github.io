@@ -1321,11 +1321,11 @@ export default abstract class Pokemon extends Phaser.GameObjects.Container {
     this.scene.triggerPokemonFormChange(this, SpeciesFormChangeMoveLearnedTrigger);
   }
 
-  trySelectMove(moveIndex: integer, ignorePp?: boolean): boolean {
+  trySelectMove(moveIndex: integer, ignorePp?: boolean, skipSelection?: boolean): boolean {
     const move = this.getMoveset().length > moveIndex
       ? this.getMoveset()[moveIndex]
       : null;
-    return move?.isUsable(this, ignorePp);
+    return move?.isUsable(this, ignorePp) && (move?.isSelectable(this, ignorePp) || skipSelection);
   }
 
   showInfo(): void {
@@ -2970,16 +2970,19 @@ export class EnemyPokemon extends Pokemon {
       }
     }
 
-    const movePool = this.getMoveset().filter(m => m.isUsable(this));
+    const movePool = this.getMoveset().filter(m => m.isUsable(this)).filter(m => m.isSelectable(this));
     if (movePool.length) {
-      if (movePool.length === 1)
-        return { move: movePool[0].moveId, targets: this.getNextTargets(movePool[0].moveId) };
       const encoreTag = this.getTag(EncoreTag) as EncoreTag;
       if (encoreTag) {
+        if (this.summonData.disabledMove === encoreTag.moveId || this.summonData.unselectableMove === encoreTag.moveId) {
+          return { move: Moves.STRUGGLE, targets: this.getNextTargets(Moves.STRUGGLE) };
+        }
         const encoreMove = movePool.find(m => m.moveId === encoreTag.moveId);
         if (encoreMove)
           return { move: encoreMove.moveId, targets: this.getNextTargets(encoreMove.moveId) };
-      }
+        }
+      if (movePool.length === 1)
+          return { move: movePool[0].moveId, targets: this.getNextTargets(movePool[0].moveId) };
       switch (this.aiType) {
         case AiType.RANDOM:
           const moveId = movePool[this.scene.randBattleSeedInt(movePool.length)].moveId;
@@ -3316,6 +3319,10 @@ export class PokemonSummonData {
   public moveQueue: QueuedMove[] = [];
   public disabledMove: Moves = Moves.NONE;
   public disabledTurns: integer = 0;
+  /*
+  * Moves that can not be selected in the UI, but don't fail when used for other reasons. Currently just used by Torment.
+  */
+  public unselectableMove: Moves = Moves.NONE;
   public tags: BattlerTag[] = [];
   public abilitySuppressed: boolean = false;
 
@@ -3396,6 +3403,12 @@ export class PokemonMove {
 
   isUsable(pokemon: Pokemon, ignorePp?: boolean): boolean {
     if (this.moveId && pokemon.summonData?.disabledMove === this.moveId)
+      return false;
+    return (ignorePp || this.ppUsed < this.getMovePp() || this.getMove().pp === -1) && !this.getMove().name.endsWith(' (N)');
+  }
+
+  isSelectable(pokemon: Pokemon, ignorePp?: boolean): boolean {
+    if ((this.moveId && pokemon.summonData?.disabledMove === this.moveId) || (this.moveId && pokemon.summonData?.unselectableMove === this.moveId))
       return false;
     return (ignorePp || this.ppUsed < this.getMovePp() || this.getMove().pp === -1) && !this.getMove().name.endsWith(' (N)');
   }
