@@ -1,5 +1,5 @@
 import { expect, describe, it } from "vitest";
-import { randomString, padInt } from "./utils";
+import { randomString, padInt } from "#app/utils";
 
 import Phaser from "phaser";
 
@@ -42,3 +42,5 @@ describe("utils", () => {
     })
   });
 });
+
+
