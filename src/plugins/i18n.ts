@@ -136,6 +136,9 @@ declare module 'i18next' {
       splashMessages: SimpleTranslationEntries;
       nature: SimpleTranslationEntries;
       growth: SimpleTranslationEntries;
+      partyUiHandler: SimpleTranslationEntries;
+      summaryUiHandler: SimpleTranslationEntries;
+      biome: SimpleTranslationEntries;
       egg: SimpleTranslationEntries;
       weather: SimpleTranslationEntries;
       modifierType: ModifierTypeTranslationEntries;

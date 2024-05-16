@@ -13,6 +13,9 @@ import { starterSelectUiHandler } from "./starter-select-ui-handler";
 import { tutorial } from "./tutorial";
 import { titles,trainerClasses,trainerNames } from "./trainers";
 import { nature } from "./nature";
+import { partyUiHandler } from "./party-ui-handler";
+import { SummaryUiHandler } from "./summary-ui-handler";
+import { biome } from "./biome";
 import { weather } from "./weather";
 import { modifierType } from "./modifier-type";
 import { growth } from "./growth";
@@ -37,6 +40,9 @@ export const zhCnConfig = {
     trainerNames: trainerNames,
     tutorial: tutorial,
     nature: nature,
+    partyUiHandler: partyUiHandler,
+    summaryUiHandler: SummaryUiHandler,
+    biome: biome,
     growth: growth,
     weather: weather,
     modifierType: modifierType,
